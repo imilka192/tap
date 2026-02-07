@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TapCoin - Простой кликер</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        /* Шапка */
+        .header {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .user-info {
+            flex: 1;
+        }
+        
+        .user-name {
+            font-size: 20px;
+            font-weight: bold;
+            color: #FFD700;
+            margin-bottom: 5px;
+        }
+        
+        .user-id {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+        
+        .stats {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
+        }
+        
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        
+        .stat-value {
+            font-weight: bold;
+            color: #FFD700;
+            font-size: 16px;
+        }
+        
+        /* Игровая зона */
+        .game-area {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border-radius: 25px;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 350px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+            position: relative;
+            cursor: pointer;
+        }
+        
+        .coin-display {
+            font-size: 64px;
+            font-weight: bold;
+            color: #FFD700;
+            text-align: center;
+            text-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            margin-bottom: 20px;
+        }
+        
+        .tap-hint {
+            font-size: 16px;
+            opacity: 0.8;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        /* Кнопка тапа */
+        .tap-button {
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle at 30% 30%, #FFD700, #FFA500);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            cursor: pointer;
+            box-shadow: 
+                inset 0 -20px 40px rgba(0, 0, 0, 0.3),
+                0 20px 40px rgba(0, 0, 0, 0.4);
+            transition: transform 0.1s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .tap-button:active {
+            transform: scale(0.95);
+        }
+        
+        .tap-button::before {
+            content: '';
+            position: absolute;
+            top: 15%;
+            left: 15%;
+            width: 20%;
+            height: 20%;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            filter: blur(5px);
+        }
+        
+        /* Эффекты */
+        .tap-effect {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.8) 0%, rgba(255, 165, 0, 0) 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: tapEffect 0.6s forwards;
+        }
+        
+        @keyframes tapEffect {
+            0% {
+                transform: scale(0.5);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(3);
+                opacity: 0;
+            }
+        }
+        
+        .coin-popup {
+            position: absolute;
+            color: #FFD700;
+            font-size: 28px;
+            font-weight: bold;
+            pointer-events: none;
+            animation: coinPopup 1s forwards;
+            z-index: 100;
+        }
+        
+        @keyframes coinPopup {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-100px) scale(1.5);
+            }
+        }
+        
+        /* Таблица лидеров */
+        .leaderboard {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .leaderboard-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #FFD700;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .player-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .player-row:last-child {
+            border-bottom: none;
+        }
+        
+        .player-rank {
+            width: 30px;
+            font-weight: bold;
+            font-size: 18px;
+            text-align: center;
+        }
+        
+        .player-name {
+            flex: 1;
+            padding: 0 10px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .player-coins {
+            font-weight: bold;
+            color: #FFD700;
+            min-width: 80px;
+            text-align: right;
+        }
+        
+        /* Кнопки */
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        
+        .btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            border-radius: 15px;
+            padding: 15px;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            backdrop-filter: blur(5px);
+        }
+        
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+        
+        .btn:active {
+            transform: scale(0.95);
+        }
+        
+        .btn-icon {
+            font-size: 24px;
+        }
+        
+        .btn-large {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            color: #333;
+            font-size: 18px;
+        }
+        
+        /* Оповещения */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(76, 175, 80, 0.9);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            display: none;
+            z-index: 1000;
+            animation: slideIn 0.3s forwards;
+            max-width: 300px;
+            backdrop-filter: blur(10px);
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        /* Модальное окно имени */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            padding: 20px;
+        }
+        
+        .modal {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            border-radius: 25px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #FFD700;
+        }
+        
+        .modal-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 16px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .modal-input:focus {
+            outline: none;
+            border-color: #FFD700;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .modal-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .modal-btn-primary {
+            background: #FFD700;
+            color: #333;
+        }
+        
+        .modal-btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        /* Адаптивность */
+        @media (max-width: 500px) {
+            .container {
+                padding: 10px;
+                gap: 15px;
+            }
+            
+            .header, .game-area, .leaderboard {
+                padding: 15px;
+            }
+            
+            .coin-display {
+                font-size: 48px;
+            }
+            
+            .tap-button {
+                width: 180px;
+                height: 180px;
+                font-size: 40px;
+            }
+            
+            .controls {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Модальное окно для имени -->
+    <div class="modal-overlay" id="nameModal">
+        <div class="modal">
+            <div class="modal-title">✏️ Выберите имя</div>
+            <p style="margin-bottom: 20px; opacity: 0.9;">
+                Как вас будут видеть другие игроки?
+            </p>
+            <input type="text" class="modal-input" id="nameInput" 
+                   placeholder="Ваше имя (2-20 символов)" maxlength="20">
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-secondary" onclick="closeNameModal()">
+                    Позже
+                </button>
+                <button class="modal-btn modal-btn-primary" onclick="saveName()">
+                    Сохранить
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Основной контейнер -->
+    <div class="container">
+        <!-- Шапка -->
+        <div class="header">
+            <div class="user-info">
+                <div class="user-name" id="userName">Загрузка...</div>
+                <div class="user-id" id="userId">ID: ...</div>
+            </div>
+            <div class="stats">
+                <div class="stat">
+                    <span>💰</span>
+                    <span class="stat-value" id="coins">0</span>
+                </div>
+                <div class="stat">
+                    <span>👆</span>
+                    <span class="stat-value" id="totalTaps">0</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Игровая зона -->
+        <div class="game-area" id="gameArea">
+            <div class="coin-display" id="coinDisplay">0 монет</div>
+            <div class="tap-hint">Тапай по монете, чтобы зарабатывать!</div>
+            <div class="tap-button" id="tapButton">
+                💰
+            </div>
+        </div>
+        
+        <!-- Таблица лидеров -->
+        <div class="leaderboard">
+            <div class="leaderboard-title">🏆 ТОП 10 ИГРОКОВ</div>
+            <div id="leaderboardContent">
+                <div class="player-row">
+                    <div class="player-name">Загрузка...</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Кнопки управления -->
+        <div class="controls">
+            <button class="btn" onclick="refreshGame()">
+                <span class="btn-icon">🔄</span>
+                <span>Обновить</span>
+            </button>
+            <button class="btn" onclick="showNameModal()">
+                <span class="btn-icon">✏️</span>
+                <span>Имя</span>
+            </button>
+            <button class="btn btn-large" onclick="shareGame()">
+                <span class="btn-icon">📢</span>
+                <span>Поделиться</span>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Оповещения -->
+    <div class="notification" id="notification"></div>
+    
+    <script>
+        // Глобальные переменные
+        let userId = null;
+        let coins = 0;
+        let totalTaps = 0;
+        let displayName = '';
+        let hasName = false;
+        
+        // Получаем ID пользователя из URL
+        function getUserId() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('user_id') || '0';
+        }
+        
+        // Форматирование чисел
+        function formatNumber(num) {
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(1) + 'M';
+            } else if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'K';
+            }
+            return num.toString();
+        }
+        
+        // Показать уведомление
+        function showNotification(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.style.display = 'block';
+            
+            // Цвет в зависимости от типа
+            if (type === 'error') {
+                notification.style.background = 'rgba(244, 67, 54, 0.9)';
+            } else if (type === 'success') {
+                notification.style.background = 'rgba(76, 175, 80, 0.9)';
+            } else {
+                notification.style.background = 'rgba(33, 150, 243, 0.9)';
+            }
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+        
+        // Создать эффект тапа
+        function createTapEffect(x, y) {
+            const effect = document.createElement('div');
+            effect.className = 'tap-effect';
+            effect.style.left = (x - 25) + 'px';
+            effect.style.top = (y - 25) + 'px';
+            
+            document.body.appendChild(effect);
+            
+            setTimeout(() => {
+                effect.remove();
+            }, 600);
+        }
+        
+        // Показать всплывающий текст
+        function showCoinPopup(amount, x, y) {
+            const popup = document.createElement('div');
+            popup.className = 'coin-popup';
+            popup.textContent = `+${amount}`;
+            popup.style.left = x + 'px';
+            popup.style.top = y + 'px';
+            
+            document.body.appendChild(popup);
+            
+            setTimeout(() => {
+                popup.remove();
+            }, 1000);
+        }
+        
+        // Отправить запрос боту
+        async function sendToBot(action, data = {}) {
+            try {
+                const payload = {
+                    user_id: userId,
+                    action: action,
+                    ...data
+                };
+                
+                // Используем Telegram WebApp API
+                if (window.Telegram && Telegram.WebApp) {
+                    return new Promise((resolve) => {
+                        Telegram.WebApp.sendData(JSON.stringify(payload));
+                        
+                        // Слушаем ответ
+                        Telegram.WebApp.onEvent('message', (message) => {
+                            try {
+                                resolve(JSON.parse(message));
+                            } catch (e) {
+                                resolve({ success: false, error: 'Ошибка парсинга' });
+                            }
+                        });
+                    });
+                } else {
+                    // Для тестирования вне Telegram
+                    console.log('Тестовый режим:', action, payload);
+                    
+                    // Имитируем ответ
+                    if (action === 'tap') {
+                        coins += 1;
+                        totalTaps += 1;
+                        updateUI();
+                        return {
+                            success: true,
+                            coins: coins,
+                            total_taps: totalTaps,
+                            coins_added: 1
+                        };
+                    } else if (action === 'get_state') {
+                        return {
+                            success: true,
+                            coins: coins,
+                            total_taps: totalTaps,
+                            display_name: displayName || 'Тестовый игрок',
+                            has_name: hasName
+                        };
+                    } else if (action === 'get_top') {
+                        return {
+                            success: true,
+                            top_players: [
+                                { name: 'Топ игрок', coins: 1000, rank: 1 },
+                                { name: 'Второй игрок', coins: 800, rank: 2 },
+                                { name: 'Третий игрок', coins: 600, rank: 3 }
+                            ]
+                        };
+                    }
+                }
+            } catch (error) {
+                console.error('Ошибка отправки:', error);
+                return { success: false, error: error.message };
+            }
+        }
+        
+        // Загрузить состояние игры
+        async function loadGameState() {
+            try {
+                const response = await sendToBot('get_state');
+                
+                if (response.success) {
+                    coins = response.coins;
+                    totalTaps = response.total_taps;
+                    displayName = response.display_name || '';
+                    hasName = response.has_name || false;
+                    
+                    // Если нет имени и еще не предлагали - показать модалку
+                    if (!hasName && !localStorage.getItem('name_offered_' + userId)) {
+                        setTimeout(() => {
+                            showNameModal();
+                            localStorage.setItem('name_offered_' + userId, 'true');
+                        }, 1000);
+                    }
+                    
+                    updateUI();
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки:', error);
+            }
+        }
+        
+        // Загрузить таблицу лидеров
+        async function loadLeaderboard() {
+            try {
+                const response = await sendToBot('get_top');
+                
+                if (response.success && response.top_players) {
+                    const container = document.getElementById('leaderboardContent');
+                    let html = '';
+                    
+                    response.top_players.forEach(player => {
+                        const isCurrentUser = player.user_id == userId;
+                        const medal = player.rank <= 3 ? ['🥇', '🥈', '🥉'][player.rank - 1] : `${player.rank}.`;
+                        const name = player.name.length > 15 ? player.name.substring(0, 12) + '...' : player.name;
+                        
+                        html += `
+                            <div class="player-row" ${isCurrentUser ? 'style="background: rgba(255, 215, 0, 0.1); border-radius: 10px;"' : ''}>
+                                <div class="player-rank">${medal}</div>
+                                <div class="player-name" ${isCurrentUser ? 'style="color: #FFD700; font-weight: bold;"' : ''}>
+                                    ${name} ${isCurrentUser ? '⭐' : ''}
+                                </div>
+                                <div class="player-coins">${formatNumber(player.coins)}</div>
+                            </div>
+                        `;
+                    });
+                    
+                    container.innerHTML = html;
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки лидерборда:', error);
+            }
+        }
+        
+        // Обновить интерфейс
+        function updateUI() {
+            // Обновляем имя
+            const userNameElement = document.getElementById('userName');
+            if (displayName) {
+                userNameElement.textContent = displayName;
+                userNameElement.style.color = '#FFD700';
+            } else {
+                userNameElement.textContent = 'Без имени';
+                userNameElement.style.color = '#ccc';
+            }
+            
+            // Обновляем ID
+            document.getElementById('userId').textContent = `ID: ${userId}`;
+            
+            // Обновляем счетчики
+            document.getElementById('coins').textContent = formatNumber(coins);
+            document.getElementById('totalTaps').textContent = formatNumber(totalTaps);
+            document.getElementById('coinDisplay').textContent = `${formatNumber(coins)} монет`;
+        }
+        
+        // Обработчик тапа
+        async function handleTap(event) {
+            // Координаты тапа
+            const x = event.clientX || event.touches[0].clientX;
+            const y = event.clientY || event.touches[0].clientY;
+            
+            // Эффекты
+            createTapEffect(x, y);
+            showCoinPopup(1, x, y);
+            
+            // Анимация кнопки
+            const tapButton = document.getElementById('tapButton');
+            tapButton.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                tapButton.style.transform = 'scale(1)';
+            }, 100);
+            
+            // Отправляем запрос на сервер
+            try {
+                const response = await sendToBot('tap');
+                
+                if (response.success) {
+                    coins = response.coins;
+                    totalTaps = response.total_taps;
+                    updateUI();
+                    
+                    // Обновляем таблицу лидеров каждые 10 тапов
+                    if (totalTaps % 10 === 0) {
+                        await loadLeaderboard();
+                    }
+                } else {
+                    showNotification(response.error || 'Ошибка тапа', 'error');
+                }
+            } catch (error) {
+                console.error('Ошибка тапа:', error);
+                // Локальное добавление при ошибке сети
+                coins += 1;
+                totalTaps += 1;
+                updateUI();
+            }
+        }
+        
+        // Обновить игру
+        async function refreshGame() {
+            showNotification('Обновление...');
+            await loadGameState();
+            await loadLeaderboard();
+            showNotification('Обновлено!', 'success');
+        }
+        
+        // Поделиться игрой
+        function shareGame() {
+            const shareText = `🎮 Я играю в TapCoin!\n💰 Монет: ${formatNumber(coins)}\n👆 Тапов: ${formatNumber(totalTaps)}\n\nПрисоединяйся!`;
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: 'TapCoin',
+                    text: shareText
+                });
+            } else {
+                navigator.clipboard.writeText(shareText).then(() => {
+                    showNotification('Скопировано в буфер обмена!', 'success');
+                });
+            }
+        }
+        
+        // Работа с модальным окном имени
+        function showNameModal() {
+            document.getElementById('nameModal').style.display = 'flex';
+            document.getElementById('nameInput').value = displayName || '';
+            document.getElementById('nameInput').focus();
+        }
+        
+        function closeNameModal() {
+            document.getElementById('nameModal').style.display = 'none';
+        }
+        
+        async function saveName() {
+            const nameInput = document.getElementById('nameInput');
+            const name = nameInput.value.trim();
+            
+            if (name.length < 2 || name.length > 20) {
+                showNotification('Имя должно быть 2-20 символов', 'error');
+                return;
+            }
+            
+            try {
+                const response = await sendToBot('set_name_from_app', { name: name });
+                
+                if (response.success) {
+                    displayName = name;
+                    hasName = true;
+                    updateUI();
+                    closeNameModal();
+                    showNotification('Имя сохранено!', 'success');
+                } else {
+                    showNotification(response.message || 'Имя уже занято', 'error');
+                }
+            } catch (error) {
+                showNotification('Ошибка сохранения имени', 'error');
+            }
+        }
+        
+        // Инициализация игры
+        async function initGame() {
+            // Получаем ID пользователя
+            userId = getUserId();
+            
+            // Инициализация Telegram WebApp
+            if (window.Telegram && Telegram.WebApp) {
+                Telegram.WebApp.ready();
+                Telegram.WebApp.expand();
+                Telegram.WebApp.setBackgroundColor('#667eea');
+                Telegram.WebApp.setHeaderColor('#667eea');
+            }
+            
+            // Настраиваем обработчики событий
+            const tapButton = document.getElementById('tapButton');
+            const gameArea = document.getElementById('gameArea');
+            
+            tapButton.addEventListener('click', handleTap);
+            tapButton.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                handleTap(e);
+            });
+            
+            gameArea.addEventListener('click', (e) => {
+                if (e.target === gameArea) {
+                    handleTap(e);
+                }
+            });
+            
+            // Загружаем начальные данные
+            await loadGameState();
+            await loadLeaderboard();
+            
+            // Автосохранение каждые 30 секунд
+            setInterval(async () => {
+                await loadGameState();
+            }, 30000);
+            
+            // Обновление таблицы лидеров каждую минуту
+            setInterval(async () => {
+                await loadLeaderboard();
+            }, 60000);
+            
+            console.log('Игра инициализирована для пользователя:', userId);
+        }
+        
+        // Запуск при загрузке страницы
+        document.addEventListener('DOMContentLoaded', initGame);
+        
+        // Закрытие модального окна по клику на оверлей
+        document.getElementById('nameModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('nameModal')) {
+                closeNameModal();
+            }
+        });
+        
+        // Закрытие модального окна по Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeNameModal();
+            }
+        });
+    </script>
+</body>
+</html>
